@@ -541,7 +541,7 @@
             <artifactId>sonar-maven-plugin</artifactId>
           </plugin>
         </plugins>
-        <pluginManagement>
+        <!-- <pluginManagement>
           <plugins>
             <plugin>
               <groupId>org.sonarsource.scanner.maven</groupId>
@@ -557,7 +557,7 @@
               </configuration>
             </plugin>
           </plugins>
-        </pluginManagement>
+        </pluginManagement> -->
       </build>
     </profile>
   </profiles>
