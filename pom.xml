@@ -529,7 +529,7 @@
         </plugins>
       </build>
     </profile>
-    <profile>
+    <!-- <profile>
       <id>sonar</id>
       <properties>
         <sonar.php.coverage.reportPaths>${project.build.directory}/clover/clover.xml</sonar.php.coverage.reportPaths>
@@ -541,7 +541,7 @@
             <artifactId>sonar-maven-plugin</artifactId>
           </plugin>
         </plugins>
-        <!-- <pluginManagement>
+        <pluginManagement>
           <plugins>
             <plugin>
               <groupId>org.sonarsource.scanner.maven</groupId>
@@ -557,9 +557,9 @@
               </configuration>
             </plugin>
           </plugins>
-        </pluginManagement> -->
+        </pluginManagement>
       </build>
-    </profile>
+    </profile> -->
   </profiles>
 
   <properties>
