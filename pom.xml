@@ -529,7 +529,7 @@
         </plugins>
       </build>
     </profile>
-    <!-- <profile>
+    <profile>
       <id>sonar</id>
       <properties>
         <sonar.php.coverage.reportPaths>${project.build.directory}/clover/clover.xml</sonar.php.coverage.reportPaths>
@@ -559,7 +559,7 @@
           </plugins>
         </pluginManagement>
       </build>
-    </profile> -->
+    </profile>
   </profiles>
 
   <properties>
@@ -603,6 +603,8 @@
     <c-client-sasl>yes</c-client-sasl>
 	
 	<!-- isw2 project - sonar integration -->
+	<sonar.projectKey>alessandrochillotti_zookeeper</sonar.projectKey>
+	<sonar.moduleKey>${project.groupId}:${project.artifactId}</sonar.moduleKey>
 	<sonar.organization>alessandrochillotti</sonar.organization>
   	<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 	<sonar.coverage.jacoco.xmlReportPaths>${maven.multiModuleProjectDirectory}/zookeeper-coverage/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
