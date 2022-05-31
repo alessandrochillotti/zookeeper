@@ -1,14 +1,161 @@
 package org.apache.zookeeper.server;
 
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
+import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Stat;
 import org.junit.Test;
+import org.junit.experimental.runners.Enclosed;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.Assert;
 
+@RunWith(Enclosed.class)
 public class DataTreeTest {
+	
+	@RunWith(Parameterized.class)
+	public static class CreateNodeTest {
+		private String path;
+		private byte[] data;
+		private long ephemeralOwner;
+		private int parentCVersion;
+		private long zxid;
+		private long time;
+		private List<ACL> acl;
+		private Stat outputStat;
+		
+		private String expectedResult;
+		
+		private DataTree dataTree;
+		
+		@Parameters
+		public static Collection<Object[]> data() {
+			byte[] emptyData = { };
+			List<ACL> aclList = new ArrayList<ACL>();
+			List<ACL> emptyList = new ArrayList<ACL>();
+			ACL acl = new ACL();
+			acl.setPerms(0);
+			aclList.add(acl);
+			
+	        return Arrays.asList(new Object[][] {
+	        	{ null, null, null, 0, 0, 0, 0, null, "null" },
+	        	{ "nodo", null, null, 0, 0, 0, 0, null, "begin" },
+	        	{ "/nodo", emptyData, null, 1, 0, 0, 0, null, "1" },
+	        	{ "/nodo", null, null, 0, 0, 0, 0, null, "1" },
+	        	{ "/nodo", "ciao".getBytes(), null, -1, 0, 0, 0, null, "1"},
+	        	{ "/nodo", "ciao".getBytes(), null, 0, 0, 0, 0, null, "1" },
+	        	{ "/nodo", "ciao".getBytes(), null, 0, -1, 0, 0, null, "1" },
+	        	{ "/nodo", "ciao".getBytes(), null, 0, 0, -1, 0, null, "1" },
+	        	{ "/nodo", "ciao".getBytes(), null, 1, 0, 0, 0, null, "1" },
+	        	{ "/nodo", "ciao".getBytes(), null, -1, 1, 0, 0, null, "1" },
+	        	{ "/nodo", "ciao".getBytes(), null, -1, -1, 0, 0, null, "1" },
+	        	{ "/nodo", "ciao".getBytes(), null, 0, -1, 0, 0, null, "1" },
+	        	{ "/nodo", "ciao".getBytes(), null, -1, 1, 0, 1, null, "1" },
+	        	{ "/nodo", "ciao".getBytes(), emptyList, -1, 1, 0, 1, null, "1" },
+	        	{ "/nodo", "ciao".getBytes(), aclList, -1, 1, 0, 1, null, "1" },
+	        	{ "/nodo", "ciao".getBytes(), null, 1, 1, 0, -1, new Stat(), "1" },
+	        	{ "/nodo", "ciao".getBytes(), null, -1, 1, 0, 0, new Stat(), "1" }
+	        });
+	    }
 
-        public DataTreeTest() {
-        }
+		public CreateNodeTest(String path, byte[] data, List<ACL> acl, long ephemeralOwner, int parentCVersion, long zxid, long time, Stat outputStat, String expectedResult) {
+			configure(path, data, acl, ephemeralOwner, parentCVersion, zxid, time, outputStat, expectedResult);
+		}
+		
+		public void configure(final String path, byte[] data, List<ACL> acl, long ephemeralOwner, int parentCVersion, long zxid, long time, Stat outputStat, String expectedResult) {
+			this.path = path;
+			this.data = data; 
+			this.acl = acl;
+			this.ephemeralOwner = ephemeralOwner;
+			this.parentCVersion = parentCVersion;
+			this.zxid = zxid;
+			this.time = time;
+			this.outputStat = outputStat;
+			this.expectedResult = expectedResult;
+			
+			dataTree = new DataTree();
+		}
+		
+		@Test
+		public void createNodeTest() {
+			int startNodes;
+			try {
+				startNodes = dataTree.getNodeCount();
+				dataTree.createNode(path, data, acl, ephemeralOwner, parentCVersion, zxid, time);
+				Assert.assertEquals(expectedResult, Integer.toString(dataTree.getNodeCount()-startNodes));
+			} catch (Exception e) {
+				Assert.assertTrue(expectedResult.contains(expectedResult));
+			}
+		}
+	}
+	
+	@RunWith(Parameterized.class)
+	public static class SetDataTest {
+		
+		private String path;
+		private byte[] data;
+		private int version;
+		private long zxid;
+		private long time;
+		private String expectedResult;
 
-        @Test
-        public void test() {
-        	DataTree dT = new DataTree();
-        }
+		private DataTree tree;
+		
+		@Parameters
+		public static Collection<Object[]> data() {
+			
+			byte[] empty = { };
+			
+	        return Arrays.asList(new Object[][] {
+	        	{ null, null, 0, 0, 0, "null" },
+	        	{ "/notexists", "ciao".getBytes(), 0, 0, 0, "NoNode" },
+	        	{ "/node", null, 0, 0, 0, "null" },
+	        	{ "/node", empty, 0, 0, 0, "" },
+	        	{ "/node", "ciao".getBytes(), 0, 0, 0, "ciao" },
+	        	{ "/node", "ciao".getBytes(), -1, -1, 1, "ciao" },
+	        	{ "/node", "ciao".getBytes(), 1, 1, -1, "ciao" }
+	        });
+	    }
+		
+		public SetDataTest(String path, byte[] data, int version, long zxid, long time, String expectedResult) {
+			configure(path, data, version, zxid, time, expectedResult);
+		}
+		
+		public void configure(String path, byte[] data, int version, long zxid, long time, String expectedResult) {
+			// create node
+			tree = new DataTree();
+			try {
+				tree.createNode("/node", null, null, 0, 0, 0, 0);
+			} catch (NoNodeException | NodeExistsException e) {
+				e.printStackTrace();
+			}
+			
+			this.path = path;
+			this.data = data;
+			this.version = version;
+			this.zxid = zxid;
+			this.time = time;
+			this.expectedResult = expectedResult;
+		}
+		
+		@Test
+		public void setDataTest() {
+			try {
+				tree.setData(path, data, version, zxid, time);
+				Assert.assertEquals(expectedResult, new String(tree.getData(path, new Stat(), null), StandardCharsets.UTF_8));
+			} catch (NoNodeException e) {
+				Assert.assertTrue(e.getMessage().contains(expectedResult));
+			} catch (NullPointerException e) {
+				Assert.assertEquals(null, e.getMessage());
+			}
+		}
+		
+	}
 }
