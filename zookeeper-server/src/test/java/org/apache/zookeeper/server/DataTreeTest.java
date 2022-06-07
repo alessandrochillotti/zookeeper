@@ -43,23 +43,31 @@ public class DataTreeTest {
 			ACL acl = new ACL();
 			acl.setPerms(0);
 			aclList.add(acl);
-			
+						
 	        return Arrays.asList(new Object[][] {
-	        	{ null, null, null, 0, 0, 0, 0, null, "null" },
-	        	{ "nodo", null, null, 0, 0, 0, 0, null, "begin" },
+	        	{ null, null, null, 0, 0, 0, 0, null, null },
+	        	{ "nodo", null, null, 0, 0, 0, 0, null, "begin 0, end -1, length 4" },
 	        	{ "/nodo", emptyData, null, 1, 0, 0, 0, null, "1" },
 	        	{ "/nodo", null, null, 0, 0, 0, 0, null, "1" },
 	        	{ "/nodo", "ciao".getBytes(), null, -1, 0, 0, 0, null, "1"},
 	        	{ "/nodo", "ciao".getBytes(), null, 0, 0, 0, 0, null, "1" },
 	        	{ "/nodo", "ciao".getBytes(), null, 0, -1, 0, 0, null, "1" },
 	        	{ "/nodo", "ciao".getBytes(), null, 0, 0, -1, 0, null, "1" },
-	        	{ "/nodo", "ciao".getBytes(), null, 1, 0, 0, 0, null, "1" },
+	        	{ "/nodo", "ciao".getBytes(), null, 17, 0, 0, 0, null, "1" },
 	        	{ "/nodo", "ciao".getBytes(), null, -1, 1, 0, 0, null, "1" },
 	        	{ "/nodo", "ciao".getBytes(), null, -1, -1, 0, 0, null, "1" },
 	        	{ "/nodo", "ciao".getBytes(), null, 0, -1, 0, 0, null, "1" },
 	        	{ "/nodo", "ciao".getBytes(), null, -1, 1, 0, 1, null, "1" },
+	        	{ "/nodi/nodo", "ciao".getBytes(), null, -1, 1, 0, 1, null, "KeeperErrorCode = NoNode" },
+	        	{ "/exist", "ciao".getBytes(), null, -1, 1, 0, 1, null, "KeeperErrorCode = NodeExists" },
+	        	{ "/nodo", "ciao".getBytes(), emptyList, Long.MIN_VALUE, 1, 0, 1, null, "1" },	        	
+	        	{ "/prop", "ciao".getBytes(), emptyList, -1, 1, 0, 1, null, "1" },
+	        	
+	        	{ "/zookeeper/quota/nodo/zookeeper_limits", "ciao".getBytes(), emptyList, -1, 1, 0, 1, null, "1" },
+	        	{ "/zookeeper/quota/zookeeper_stats", "ciao".getBytes(), emptyList, -1, 1, 0, 1, null, "1" },
+	        	
 	        	{ "/nodo", "ciao".getBytes(), emptyList, -1, 1, 0, 1, null, "1" },
-	        	{ "/nodo", "ciao".getBytes(), aclList, -1, 1, 0, 1, null, "1" },
+	        	{ "/nodo", "ciao".getBytes(), aclList, -1, 1, 0, 1, null, null },
 	        	{ "/nodo", "ciao".getBytes(), null, 1, 1, 0, -1, new Stat(), "1" },
 	        	{ "/nodo", "ciao".getBytes(), null, -1, 1, 0, 0, new Stat(), "1" }
 	        });
@@ -81,6 +89,30 @@ public class DataTreeTest {
 			this.expectedResult = expectedResult;
 			
 			dataTree = new DataTree();
+			
+			if (path != null && path.equals("/exist")) {
+				try {
+					dataTree.createNode("/exist", data, acl, ephemeralOwner, parentCVersion, zxid, time);
+				} catch (NoNodeException | NodeExistsException e) {
+					e.printStackTrace();
+				}
+			} else if (path != null && path.equals("/prop")) {
+				System.setProperty("zookeeper.extendedTypesEnabled", "true");
+				System.setProperty("zookeeper.emulate353TTLNodes", "true");
+			} else if (ephemeralOwner == 17) {
+				try {
+					dataTree.createNode("/parent", data, acl, ephemeralOwner, parentCVersion, zxid, time);
+				} catch (NoNodeException | NodeExistsException e) {
+					e.printStackTrace();
+				}
+			} else if (path != null && path.equals("/zookeeper/quota/nodo/zookeeper_limits")) {
+				try {
+					dataTree.createNode("/zookeeper/quota/nodo", null, acl, ephemeralOwner, parentCVersion, zxid, time);
+					dataTree.createNode("/zookeeper/quota/nodo/file", null, acl, ephemeralOwner, parentCVersion, zxid, time);
+				} catch (NoNodeException | NodeExistsException e) {
+					e.printStackTrace();
+				}
+			}					
 		}
 		
 		@Test
@@ -88,10 +120,17 @@ public class DataTreeTest {
 			int startNodes;
 			try {
 				startNodes = dataTree.getNodeCount();
-				dataTree.createNode(path, data, acl, ephemeralOwner, parentCVersion, zxid, time);
+				dataTree.createNode(path, data, acl, ephemeralOwner, parentCVersion, zxid, time, outputStat);
+				
 				Assert.assertEquals(expectedResult, Integer.toString(dataTree.getNodeCount()-startNodes));
-			} catch (Exception e) {
-				Assert.assertTrue(expectedResult.contains(expectedResult));
+			} catch (NoNodeException e) {
+				Assert.assertEquals(expectedResult, e.getMessage());
+			} catch (NodeExistsException e) {
+				Assert.assertEquals(expectedResult, e.getMessage());
+			} catch (NullPointerException e) {
+				Assert.assertEquals(expectedResult, e.getMessage());
+			} catch (StringIndexOutOfBoundsException e) {
+				Assert.assertEquals(expectedResult, e.getMessage());
 			}
 		}
 	}
@@ -114,25 +153,27 @@ public class DataTreeTest {
 			byte[] empty = { };
 			
 	        return Arrays.asList(new Object[][] {
-	        	{ null, null, 0, 0, 0, "null" },
-	        	{ "/notexists", "ciao".getBytes(), 0, 0, 0, "NoNode" },
-	        	{ "/node", null, 0, 0, 0, "null" },
-	        	{ "/node", empty, 0, 0, 0, "" },
-	        	{ "/node", "ciao".getBytes(), 0, 0, 0, "ciao" },
-	        	{ "/node", "ciao".getBytes(), -1, -1, 1, "ciao" },
-	        	{ "/node", "ciao".getBytes(), 1, 1, -1, "ciao" }
+	        	{ null, null, null, 0, 0, 0, "null" },
+	        	{ "/notexists", null, "ciao".getBytes(), 0, 0, 0, "NoNode" },
+	        	{ "/node", null, null, 0, 0, 0, "null" },
+	        	{ "/node", null, empty, 0, 0, 0, "" },
+	        	{ "/node", null, "ciao".getBytes(), 0, 0, 0, "ciao" },
+	        	{ "/node", null, "ciao".getBytes(), -1, -1, 1, "ciao" },
+	        	{ "/node", null, "ciao".getBytes(), 1, 1, -1, "ciao" },
+	        	{ "/node", "old".getBytes(), "ciao".getBytes(), 1, 1, -1, "ciao" }
+	        	
 	        });
 	    }
 		
-		public SetDataTest(String path, byte[] data, int version, long zxid, long time, String expectedResult) {
-			configure(path, data, version, zxid, time, expectedResult);
+		public SetDataTest(String path, byte[] originData, byte[] data, int version, long zxid, long time, String expectedResult) {
+			configure(path, originData, data, version, zxid, time, expectedResult);
 		}
 		
-		public void configure(String path, byte[] data, int version, long zxid, long time, String expectedResult) {
+		public void configure(String path, byte[] originData, byte[] data, int version, long zxid, long time, String expectedResult) {
 			// create node
 			tree = new DataTree();
 			try {
-				tree.createNode("/node", null, null, 0, 0, 0, 0);
+				tree.createNode("/node", originData, null, 0, 0, 0, 0);
 			} catch (NoNodeException | NodeExistsException e) {
 				e.printStackTrace();
 			}
@@ -155,6 +196,7 @@ public class DataTreeTest {
 			} catch (NullPointerException e) {
 				Assert.assertEquals(null, e.getMessage());
 			}
+			
 		}
 		
 	}
