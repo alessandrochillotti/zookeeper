@@ -62,14 +62,12 @@ public class DataTreeTest {
 	        	{ "/exist", "ciao".getBytes(), null, -1, 1, 0, 1, null, "KeeperErrorCode = NodeExists" },
 	        	{ "/nodo", "ciao".getBytes(), emptyList, Long.MIN_VALUE, 1, 0, 1, null, "1" },	        	
 	        	{ "/prop", "ciao".getBytes(), emptyList, -1, 1, 0, 1, null, "1" },
-	        	
-	        	{ "/zookeeper/quota/nodo/zookeeper_limits", "ciao".getBytes(), emptyList, -1, 1, 0, 1, null, "1" },
-	        	{ "/zookeeper/quota/zookeeper_stats", "ciao".getBytes(), emptyList, -1, 1, 0, 1, null, "1" },
-	        	
 	        	{ "/nodo", "ciao".getBytes(), emptyList, -1, 1, 0, 1, null, "1" },
 	        	{ "/nodo", "ciao".getBytes(), aclList, -1, 1, 0, 1, null, null },
 	        	{ "/nodo", "ciao".getBytes(), null, 1, 1, 0, -1, new Stat(), "1" },
-	        	{ "/nodo", "ciao".getBytes(), null, -1, 1, 0, 0, new Stat(), "1" }
+	        	{ "/nodo", "ciao".getBytes(), null, -1, 1, 0, 0, new Stat(), "1" },
+	        	{ "/zookeeper/quota/nodo/zookeeper_limits", "ciao".getBytes(), emptyList, -1, 1, 0, 1, null, "1" },
+	        	{ "/zookeeper/quota/zookeeper_stats", "ciao".getBytes(), emptyList, -1, 1, 0, 1, null, "1" }
 	        });
 	    }
 
