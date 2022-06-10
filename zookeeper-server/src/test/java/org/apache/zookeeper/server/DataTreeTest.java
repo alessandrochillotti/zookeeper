@@ -46,7 +46,7 @@ public class DataTreeTest {
 						
 	        return Arrays.asList(new Object[][] {
 	        	{ null, null, null, 0, 0, 0, 0, null, null },
-	        	{ "nodo", null, null, 0, 0, 0, 0, null, "String index out of range: -1" },
+	        	{ "nodo", null, null, 0, 0, 0, 0, null, "begin 0, end -1, length 4" },
 	        	{ "/nodo", emptyData, null, 1, 0, 0, 0, null, "1" },
 	        	{ "/nodo", null, null, 0, 0, 0, 0, null, "1" },
 	        	{ "/nodo", "ciao".getBytes(), null, -1, 0, 0, 0, null, "1"},
