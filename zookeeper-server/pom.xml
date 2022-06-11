@@ -181,6 +181,20 @@
 
   <build>
     <plugins>
+    <!-- <plugin>
+		    <groupId>org.pitest</groupId>
+		    <artifactId>pitest-maven</artifactId>
+		    <version>1.8.0</version>
+    	    <configuration>
+		        <targetClasses>
+		            <param>org.apache.zookeeper.server.DataTree</param>
+		        </targetClasses>
+		        <targetTests>
+		            <param>org.apache.zookeeper.server.DataTreeTest</param>
+		        </targetTests>
+   	 		</configuration>
+		  </plugin> -->
+    
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
@@ -351,6 +365,39 @@
   </build>
 
   <profiles>
+  <!-- pitest profile -->
+   <profile>
+	<id>mutation-testing</id>
+	<activation>
+		<activeByDefault>false</activeByDefault>
+	</activation>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.pitest</groupId>
+				<artifactId>pitest-maven</artifactId>
+				<version>1.8.0</version>
+				<configuration>
+					<targetClasses>
+						<param>org.apache.zookeeper.server.DataTree</param>
+					</targetClasses>
+					<targetTests>
+						<param>org.apache.zookeeper.server.DataTreeTest</param>
+					</targetTests>
+				</configuration>
+				<executions>
+	                <execution>
+	                    <id>pitest-report</id>
+	                    <phase>test-compile</phase>
+	                    <goals>
+	                        <goal>mutationCoverage</goal>
+	                    </goals>
+	                </execution>
+				</executions>
+			</plugin>
+		 </plugins>
+    </build>
+   </profile>
    <!-- ba-dua profile -->
     <profile>
       <id>data-flow-coverage</id>
