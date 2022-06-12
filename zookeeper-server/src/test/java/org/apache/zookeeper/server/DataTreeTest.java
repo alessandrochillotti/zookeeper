@@ -1,6 +1,7 @@
 package org.apache.zookeeper.server;
 
 import java.nio.charset.StandardCharsets;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -115,12 +116,30 @@ public class DataTreeTest {
 		
 		@Test
 		public void createNodeTest() {
-			int startNodes;
+			int startContainers = 0;
+			int startTtls = 0;
+			int startEphemerals = 0;
+			int startNodes = 0;
+			
 			try {
+				startContainers = dataTree.getContainers().size();
+				startTtls = dataTree.getTtls().size();
+				startEphemerals = dataTree.getEphemeralsCount();
 				startNodes = dataTree.getNodeCount();
+				
 				dataTree.createNode(path, data, acl, ephemeralOwner, parentCVersion, zxid, time, outputStat);
 				
-				Assert.assertEquals(expectedResult, Integer.toString(dataTree.getNodeCount()-startNodes));
+				boolean extendedTypesEnabled = System.getProperty("zookeeper.extendedTypesEnabled") == "true";
+				boolean emulate353TTLNodes = System.getProperty("zookeeper.emulate353TTLNodes") == "true";
+				
+				if (ephemeralOwner == Long.MIN_VALUE)
+					Assert.assertEquals(expectedResult, Integer.toString(dataTree.getContainers().size()-startContainers));
+				else if (extendedTypesEnabled && emulate353TTLNodes && ephemeralOwner < 0)
+					Assert.assertEquals(expectedResult, Integer.toString(dataTree.getTtls().size()-startTtls));
+				else if (ephemeralOwner != 0)
+					Assert.assertEquals(expectedResult, Integer.toString(dataTree.getEphemeralsCount()-startEphemerals));
+				else
+					Assert.assertEquals(expectedResult, Integer.toString(dataTree.getNodeCount()-startNodes));
 			} catch (NoNodeException e) {
 				Assert.assertEquals(expectedResult, e.getMessage());
 			} catch (NodeExistsException e) {
